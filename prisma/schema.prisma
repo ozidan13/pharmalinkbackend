@@ -1,0 +1,80 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PHARMACIST
+  PHARMACY_OWNER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  role          UserRole
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  pharmacistProfile PharmacistProfile?
+  pharmacyOwnerProfile PharmacyOwnerProfile?
+}
+
+model PharmacistProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  phoneNumber String?
+  cvUrl       String? // URL to the stored CV file
+  bio         String?
+  experience  String? // Could be structured JSON or text
+  education   String? // Could be structured JSON or text
+  // Location information
+  city        String
+  area        String?  // Optional: more specific area within the city
+  available   Boolean @default(true) // Availability status
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PharmacyOwnerProfile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pharmacyName  String
+  contactPerson String
+  phoneNumber   String?
+  address       String?
+  // Location information
+  city          String
+  area          String?  // Optional: more specific area within the city
+  subscriptionStatus String @default("none") // e.g., none, basic, premium
+  subscriptionExpiresAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  products      Product[]
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  category      String    // e.g., Cosmetics, Healthcare
+  isNearExpiry  Boolean   @default(false)
+  expiryDate    DateTime?
+  imageUrl      String?
+  stock         Int       @default(0)
+  pharmacyOwnerId String
+  pharmacyOwner PharmacyOwnerProfile @relation(fields: [pharmacyOwnerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
